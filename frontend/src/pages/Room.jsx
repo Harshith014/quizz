@@ -7,7 +7,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import he from "he";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fadeIn } from "react-animations";
 import { Link } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
@@ -122,24 +122,105 @@ function RoomPage() {
   const [roomId, setRoomId] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState("");
-  const [questionCount, setQuestionCount] = useState("");
+  const [questionCount, setQuestionCount] = useState(0);
+  const [availableQuestions, setAvailableQuestions] = useState(0); // Separate state for available questions
   const [games, setGames] = useState([]);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [difficulties, setDifficulties] = useState([]);
+
+  // Fetch available question count when category or difficulty changes
+  useEffect(() => {
+    if (category && difficulty) {
+      const fetchQuestionCount = async () => {
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_APP_BASE_URL}/questions/count`,
+            {
+              params: { category, difficulty },
+            }
+          );
+          setAvailableQuestions(response.data.questionCount); // Only set available question count
+        } catch (error) {
+          console.error("Error fetching question count:", error);
+        }
+      };
+
+      fetchQuestionCount();
+    }
+  }, [category, difficulty]);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_APP_BASE_URL}/questions/categories`
+        );
+        setCategories(response.data.categories);
+      } catch (error) {
+        setError("Failed to load categories. Please try again.", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (category) {
+      fetchDifficulties(category);
+    } else {
+      setDifficulties([]);
+    }
+  }, [category]);
+
+  const fetchDifficulties = async (category) => {
+    try {
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_APP_BASE_URL
+        }/questions/difficulties/${category}`
+      );
+      setDifficulties(response.data.difficulties);
+    } catch (error) {
+      setError("Failed to load difficulties. Please try again.", error);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!roomId) {
+      alert("Room ID is mandatory.");
+      setError("Room ID is mandatory.");
+      return;
+    }
+
+    // Check if entered question count exceeds available questions
+    if (questionCount > availableQuestions) {
+      alert(`You cannot request more than ${availableQuestions} questions.`);
+      setError(`You cannot request more than ${availableQuestions} questions.`);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
+      // eslint-disable-next-line no-unused-vars
       const response = await axios.post(
         `${import.meta.env.VITE_APP_BASE_URL}/game/create`,
         { roomId, category, difficulty, questionCount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setGames([...games, response.data.game]);
+
+      alert("Room is created successfully!");
+
+      // Refetch the games after the new room is created
+      await handleGetGames();
+
+      // Reset form inputs after submission
       setRoomId("");
       setCategory("");
       setDifficulty("");
-      setQuestionCount("");
+      setQuestionCount(0);
       setError(null);
     } catch (error) {
       setError(
@@ -185,22 +266,48 @@ function RoomPage() {
               onChange={(e) => setRoomId(e.target.value)}
               placeholder="Enter room ID"
             />
-            <Input
-              type="text"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="Enter category"
-            />
-            <Input
-              type="text"
+              required
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat, index) => {
+                // Check if cat is defined and not null
+                const formattedCategory = cat
+                  ? he.decode(cat.includes(": ") ? cat.split(": ")[1] : cat)
+                  : "";
+                return (
+                  <option key={index} value={cat}>
+                    {formattedCategory}
+                  </option>
+                );
+              })}
+            </select>
+
+            <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              placeholder="Enter difficulty"
-            />
+              required
+            >
+              <option value="">Select a difficulty</option>
+              {difficulties.map((difficulty, index) => (
+                <option key={index} value={difficulty}>
+                  {difficulty}
+                </option>
+              ))}
+            </select>
+            {/* Display available question count */}
+            {category && difficulty && (
+              <p>
+                Available questions for {category} ({difficulty}):{" "}
+                {availableQuestions}
+              </p>
+            )}
             <Input
               type="number"
               value={questionCount}
-              onChange={(e) => setQuestionCount(e.target.value)}
+              onChange={(e) => setQuestionCount(e.target.value)} // Ensure user-controlled input
               placeholder="Enter question count"
             />
             {error && (
@@ -234,10 +341,13 @@ function RoomPage() {
                   <TableRow key={`${game.roomId}-${game.category}`}>
                     <TableCell>{game.roomId}</TableCell>
                     <TableCell>
-                      {game.category && game.category.includes(": ")
-                        ? he.decode(game.category.split(": ")[1])
-                        : he.decode(game.category)}
+                      {game.category
+                        ? game.category.includes(": ")
+                          ? he.decode(game.category.split(": ")[1])
+                          : he.decode(game.category)
+                        : "Unknown Category"}
                     </TableCell>
+
                     <TableCell>{game.difficulty}</TableCell>
                     <TableCell>{game.questionCount}</TableCell>
                     <TableCell>

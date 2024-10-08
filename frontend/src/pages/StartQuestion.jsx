@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import he from "he";
 import { jwtDecode } from "jwt-decode";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fadeIn } from "react-animations";
 import { useNavigate, useParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
@@ -157,7 +157,6 @@ function StartQuestionsPage() {
   const [totalTime, setTotalTime] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
   const [playerResult, setPlayerResult] = useState(null);
-  const [gameEnded, setGameEnded] = useState(false);
   const { roomId } = useParams();
   const token = localStorage.getItem("token");
   const timerIdRef = useRef(null);
@@ -174,6 +173,7 @@ function StartQuestionsPage() {
     const seconds = timeInSeconds % 60;
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
+
 
   useEffect(() => {
     axios
@@ -247,7 +247,7 @@ function StartQuestionsPage() {
     }
   };
 
-  const handleEndGame = async () => {
+  const handleEndGame = useCallback(async () => {
     try {
       const userId = jwtDecode(token).id;
       const response = await axios.post(
@@ -257,7 +257,6 @@ function StartQuestionsPage() {
       );
 
       if (response.data.success || response.data.game.status === "ended") {
-        setGameEnded(true);
         alert("The game has been successfully ended.");
       } else {
         alert("Failed to end the game. Please try again.");
@@ -265,7 +264,13 @@ function StartQuestionsPage() {
     } catch (error) {
       console.error("Error ending the game:", error);
     }
-  };
+  }, [roomId, token]);
+
+  useEffect(() => {
+    if (isGameFinished) {
+      handleEndGame();
+    }
+  }, [isGameFinished, handleEndGame]);
 
   if (isGameFinished) {
     return (
@@ -324,11 +329,11 @@ function StartQuestionsPage() {
               </tbody>
             </Table>
           </div>
-          {!gameEnded && (
+          {/* {!gameEnded && (
             <Button onClick={handleEndGame}>
               <FontAwesomeIcon icon={faDoorOpen} /> End Game
             </Button>
-          )}
+          )} */}
           <Button onClick={() => navigate("/rooms")}>
             <FontAwesomeIcon icon={faDoorOpen} /> Go To Rooms
           </Button>
@@ -374,7 +379,12 @@ function StartQuestionsPage() {
                 checked={selectedOption === option.optionNumber}
                 onChange={() => setSelectedOption(option.optionNumber)}
               />
-              <span style={{ marginLeft: "10px" }}>{option.optionText}</span>
+              <span
+                style={{ marginLeft: "10px" }}
+                dangerouslySetInnerHTML={{
+                  __html: he.decode(option.optionText),
+                }}
+              />
             </OptionItem>
           ))}
         </OptionsList>

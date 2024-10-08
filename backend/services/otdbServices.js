@@ -19,8 +19,6 @@ const fetchRandomQuestions = async (amount, category, difficulty, type = 'multip
 
         const response = await axios.get(url);
 
-        console.log('OTDB Response:', response.data);
-
         if (response.data.response_code !== 0) {
             throw new Error(`Failed to fetch questions. OTDB Response Code: ${response.data.response_code}`);
         }

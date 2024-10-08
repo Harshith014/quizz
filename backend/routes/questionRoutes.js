@@ -1,6 +1,6 @@
 // routes/questionRoutes.js
 const express = require('express');
-const { createQuestionPool, getSavedQuestions } = require('../controllers/questionController');
+const { createQuestionPool, getCategories, getDifficultiesByCategory, countQuestionsByCategoryAndDifficulty } = require('../controllers/questionController');
 
 const router = express.Router();
 
@@ -8,6 +8,10 @@ const router = express.Router();
 router.post('/generate', createQuestionPool);
 
 // Route to get saved questions from the database
-router.get('/fetch', getSavedQuestions);
+router.get('/categories', getCategories);
+
+router.get('/difficulties/:category', getDifficultiesByCategory);
+
+router.get('/count', countQuestionsByCategoryAndDifficulty);
 
 module.exports = router;
