@@ -8,6 +8,12 @@ const User = require('../models/User');
 exports.createGame = async (req, res) => {
     const { roomId, category, difficulty, questionCount } = req.body;
 
+
+    // Check if all required fields are present
+    if (!roomId || !category || !difficulty || !questionCount) {
+        return res.status(400).json({ message: 'Missing required fields. Please provide roomId, category, difficulty, and questionCount.' });
+    }
+
     try {
         // Check if a game room with the same roomId already exists
         const existingGame = await Game.findOne({ roomId });
@@ -18,16 +24,29 @@ exports.createGame = async (req, res) => {
         // Fetch all saved questions from the database using your questionController
         const savedQuestionsResult = await questionController.getSavedQuestions();
 
+
         // Check if questions were retrieved successfully
         if (!savedQuestionsResult.questions || savedQuestionsResult.questions.length === 0) {
             return res.status(400).json({ message: 'No questions found in the database.' });
         }
 
         // Filter questions based on category and difficulty
-        const filteredQuestions = savedQuestionsResult.questions.filter(q =>
-            q.category.toLowerCase().includes(category.toLowerCase()) &&
-            q.difficulty.toLowerCase() === difficulty.toLowerCase()
-        );
+        const filteredQuestions = savedQuestionsResult.questions.filter(q => {
+            if (!q || typeof q !== 'object') {
+                console.warn('Invalid question object:', q);
+                return false;
+            }
+
+            if (!q.category || !q.difficulty) {
+                console.warn('Question missing category or difficulty:', q);
+                return false;
+            }
+
+            const categoryMatch = q.category.toString().toLowerCase().includes(category.toString().toLowerCase());
+            const difficultyMatch = q.difficulty.toString().toLowerCase() === difficulty.toString().toLowerCase();
+
+            return categoryMatch && difficultyMatch;
+        });
 
         // Check if there are enough questions
         if (filteredQuestions.length < questionCount) {
@@ -45,7 +64,10 @@ exports.createGame = async (req, res) => {
         const game = new Game({
             roomId,
             questions: selectedQuestions.map(q => q._id), // Store only the question IDs
-            status: 'not_started'
+            status: 'not_started',
+            category,
+            difficulty,
+            questionCount
         });
 
         await game.save();
