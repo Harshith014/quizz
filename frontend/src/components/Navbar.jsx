@@ -9,7 +9,7 @@ import ButtonExample from "./Button";
 
 function NavbarExample() {
   const dispatch = useDispatch();
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(checkAuthStatus());
@@ -19,9 +19,6 @@ function NavbarExample() {
     dispatch(logout());
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <Navbar fixed="top" bg="dark" data-bs-theme="dark" expand="lg">
