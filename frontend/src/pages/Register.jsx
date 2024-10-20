@@ -3,7 +3,7 @@ import {
   faGamepad,
   faLock,
   faUser,
-  faUserPlus,
+  faUserPlus
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
@@ -11,6 +11,7 @@ import { useState } from "react";
 import { fadeIn } from "react-animations";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
+import LoadingComponent from "../components/Loading";
 
 const fadeInAnimation = keyframes`${fadeIn}`;
 
@@ -108,10 +109,12 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setLoading(true);
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_APP_BASE_URL}/auth/register`,
@@ -125,9 +128,18 @@ function RegisterPage() {
         navigate("/login");
       } else {
         setError(data.message);
+        setEmail("");
+        setPassword("");
+        setUsername("");
       }
     } catch (error) {
-      setError("Server error: " + error.message);
+      const errorMessage = error.response?.data?.message || error.message || "An error occurred";
+      setError(errorMessage);
+      setEmail("");
+      setPassword("");
+      setUsername("");
+    } finally {
+      setLoading(false); // Set loading to false when the API call ends
     }
   };
 
@@ -137,60 +149,64 @@ function RegisterPage() {
         <Title>
           <FontAwesomeIcon icon={faUserPlus} /> Register
         </Title>
-        <StyledForm onSubmit={handleSubmit}>
-          <InputGroup>
-            <Label>
-              <FontAwesomeIcon
-                icon={faEnvelope}
-                style={{ marginRight: "0.5rem" }}
-              />{" "}
-              Email
-            </Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-          </InputGroup>
-          <InputGroup>
-            <Label>
-              <FontAwesomeIcon
-                icon={faLock}
-                style={{ marginRight: "0.5rem" }}
-              />{" "}
-              Password
-            </Label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </InputGroup>
-          <InputGroup>
-            <Label>
-              <FontAwesomeIcon
-                icon={faUser}
-                style={{ marginRight: "0.5rem" }}
-              />{" "}
-              Username
-            </Label>
-            <Input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              required
-            />
-          </InputGroup>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-          <SubmitButton type="submit">
-            <FontAwesomeIcon icon={faGamepad} /> Register
-          </SubmitButton>
-        </StyledForm>
+        {loading ? ( // Show loading component if loading
+          <LoadingComponent />
+        ) : (
+          <StyledForm onSubmit={handleSubmit}>
+            <InputGroup>
+              <Label>
+                <FontAwesomeIcon
+                  icon={faEnvelope}
+                  style={{ marginRight: "0.5rem" }}
+                />{" "}
+                Email
+              </Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+            </InputGroup>
+            <InputGroup>
+              <Label>
+                <FontAwesomeIcon
+                  icon={faLock}
+                  style={{ marginRight: "0.5rem" }}
+                />{" "}
+                Password
+              </Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+            </InputGroup>
+            <InputGroup>
+              <Label>
+                <FontAwesomeIcon
+                  icon={faUser }
+                  style={{ marginRight: "0.5rem" }}
+                />{" "}
+                Username
+              </Label>
+              <Input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                required
+              />
+            </InputGroup>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+            <SubmitButton type="submit">
+              <FontAwesomeIcon icon={faGamepad} /> Register
+            </SubmitButton>
+          </StyledForm>
+        )}
         <LoginLink>
           Already have an account?{" "}
           <a href="#" onClick={() => navigate("/login")}>

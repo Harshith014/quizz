@@ -11,6 +11,7 @@ import { fadeIn } from "react-animations";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
+import LoadingComponent from "../components/Loading";
 import { login } from "../redux/slices/authSlice";
 
 const fadeInAnimation = keyframes`${fadeIn}`;
@@ -115,6 +116,7 @@ function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { error, loading } = useSelector((state) => state.auth);
+  const errorMessage = error?.message || error;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -165,14 +167,20 @@ function Login() {
               required
             />
           </InputGroup>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {error && <ErrorMessage>{errorMessage}</ErrorMessage>}
           <SubmitButton type="submit" disabled={loading}>
             {loading ? (
-              <FontAwesomeIcon icon={faTrophy} spin />
+              <>
+                <FontAwesomeIcon icon={faTrophy} spin />
+                <LoadingComponent />
+                Logging in...
+              </>
             ) : (
-              <FontAwesomeIcon icon={faPuzzlePiece} />
-            )}{" "}
-            {loading ? "Logging in..." : "Login"}
+              <>
+                <FontAwesomeIcon icon={faPuzzlePiece} />{" "}
+                Login
+              </>
+            )}
           </SubmitButton>
         </StyledForm>
         <RegisterLink>

@@ -24,7 +24,6 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
 export const checkAuthStatus = createAsyncThunk('auth/checkStatus', async () => {
     const token = localStorage.getItem('token');
     if (token) {
-        // You might want to validate the token with your backend here
         return { isAuthenticated: true };
     }
     return { isAuthenticated: false };
@@ -56,7 +55,7 @@ const authSlice = createSlice({
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.payload?.message || action.payload || 'Login failed';
                 state.isAuthenticated = false;
             })
             .addCase(logout.fulfilled, (state) => {
