@@ -3,7 +3,6 @@ import Spinner from 'react-bootstrap/Spinner';
 const LoadingComponent = () => {
   return (
     <div className="loading-container text-center">
-      <h3>Loading...</h3>
       <div className="d-flex justify-content-center">
         <Spinner animation="grow" variant="primary" className="m-2" />
         <Spinner animation="grow" variant="secondary" className="m-2" />
